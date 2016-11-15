@@ -5,6 +5,7 @@ using SFML.Audio;
 using SFML.Graphics;
 using SFML.System;
 using SFML.Window;
+using System.Collections.Generic;
 
 namespace Surrounded.Source.Game
 {
@@ -19,7 +20,15 @@ namespace Surrounded.Source.Game
         private Clock FrameTimer;
         private bool Walking;
         private int Direction;
+        private Dictionary<Keyboard.Key, int> KeyToDirection = new Dictionary<Keyboard.Key, int>()
+        {
+            { Keyboard.Key.Down, 0 },
+            { Keyboard.Key.Left, 1 },
+            { Keyboard.Key.Right, 2 },
+            { Keyboard.Key.Up, 3 }
+        };
         private int Step;
+        private List<Keyboard.Key> KeysPressed = new List<Keyboard.Key>();
 
         // These are used as the player's stats.
         private float Health = 10.0F;
@@ -62,30 +71,35 @@ namespace Surrounded.Source.Game
         public void OnKeyPressed(Keyboard.Key keyCode, bool shiftDown)
         {
             // Determine direction.
-            if (keyCode == Keyboard.Key.Down) { this.Direction = 0; }
-            else if (keyCode == Keyboard.Key.Left) { this.Direction = 1; }
-            else if (keyCode == Keyboard.Key.Right) { this.Direction = 2; }
-            else if (keyCode == Keyboard.Key.Up) { this.Direction = 3; }
+            if (KeyToDirection.ContainsKey(keyCode)) { this.Direction = KeyToDirection[keyCode]; }
             else { return; }
 
             // Will only be called if one of the first four keys (directional) are pressed.
             this.Walking = true;
+            if (!KeysPressed.Contains(keyCode)) { KeysPressed.Add(keyCode); }
         }
 
         // Called when the player releases a key.
         public void OnKeyReleased(Keyboard.Key keyCode, bool shiftDown)
         {
-            // Determine direction.
-            if (keyCode == Keyboard.Key.Down) { this.Direction = 0; }
-            else if (keyCode == Keyboard.Key.Left) { this.Direction = 1; }
-            else if (keyCode == Keyboard.Key.Right) { this.Direction = 2; }
-            else if (keyCode == Keyboard.Key.Up) { this.Direction = 3; }
-            else { return; }
-
             // If they stopped walking, go into a standing position.
-            // Will only be called if one of the first four keys (directional) are pressed.
-            this.Walking = false;
-            this.Step = 0;
+            // If they're still holding another key, go to the second-most recent key pressed.
+            if (KeyToDirection.ContainsKey(keyCode))
+            {
+                if (KeysPressed.IndexOf(keyCode) == KeysPressed.Count - 1)
+                {
+                    if (KeysPressed.Count == 1)
+                    {
+                        this.Walking = false;
+                        this.Step = 0;
+                    }
+                    else
+                    {
+                        this.Direction = KeyToDirection[KeysPressed[KeysPressed.IndexOf(keyCode) - 1]];
+                    }
+                }
+                this.KeysPressed.Remove(keyCode);
+            }
         }
 
         // Called when the player needs to be updated.
