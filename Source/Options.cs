@@ -13,8 +13,8 @@ namespace Surrounded.Source
         
         // Options.
         public bool Fullscreen = true;
-        public uint Width = 800;
-        public uint Height = 600;
+        public uint Width = 960;
+        public uint Height = 540;
         public uint AntialiasingLevel = 8;
         public bool VerticalSync = false;
         public uint FramerateLimit = 60;

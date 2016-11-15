@@ -28,10 +28,11 @@ namespace Surrounded.Source
         public Player Player;
         public World World;
 
+        public bool DrawDarkness;
+
         // The foreground image, used to create a dark effect.
         public RenderTexture Darkness;
         public List<Sprite> Lights;
-        public View Camera;
 
         // The program's entry point.
         public static void Main(string[] args)
@@ -92,10 +93,11 @@ namespace Surrounded.Source
             this.MouseWheelMoved += this.OnMouseWheelMoved;
 
             // Create the player.
+            this.World = new World();
             this.Player = new Player(this.World);
 
             // Create foreground images and other effects.
-            this.Darkness = new RenderTexture(this.Size.X, this.Size.Y);
+            this.Darkness = new RenderTexture(VideoMode.DesktopMode.Width, VideoMode.DesktopMode.Height);
             this.Lights = new List<Sprite>();
 
             // Run the game!
@@ -105,17 +107,17 @@ namespace Surrounded.Source
                 this.DispatchEvents();
 
                 // Clear screen and foreground.
-                this.Clear(new Color(64, 64, 64));
+                this.Clear(Color.Black);
                 this.Darkness.Clear(Color.Black);
                 this.Lights.Clear();
 
                 // Update player logic.
                 this.Player.Update(this);
 
-                // Add lights foreground.
+                // Add lights to the foreground.
                 for (int Light = 0; Light < Lights.Count; ++Light)
                 {
-                    this.Lights[Light].Draw(this.Darkness, RenderStates.Default);
+                    this.Darkness.Draw(this.Lights[Light], RenderStates.Default);
                 }
 
                 // Draw the following in the exact order.
@@ -125,7 +127,10 @@ namespace Surrounded.Source
 
                 // Draw foreground image.
                 this.Darkness.Display();
-                this.Draw(new Sprite(this.Darkness.Texture), new RenderStates(BlendMode.Multiply));
+                if (this.DrawDarkness)
+                {
+                    this.Draw(new Sprite(this.Darkness.Texture), new RenderStates(BlendMode.Multiply));
+                }
                 this.Display();
             }
         }
@@ -210,6 +215,10 @@ namespace Surrounded.Source
                 // Close the current window.
                 Surrounded.Options.Save();
                 this.Close();
+            }
+            else if (e.Code == Keyboard.Key.BackSpace)
+            {
+                this.DrawDarkness = !this.DrawDarkness;
             }
             this.Player.OnKeyReleased(e.Code, e.Shift);
         }

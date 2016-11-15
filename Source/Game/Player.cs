@@ -41,6 +41,7 @@ namespace Surrounded.Source.Game
             // Create the player's world and positioning.
             this.CurrentWorld = currentWorld;
             this.Position = this.CurrentWorld.SpawnPoint;
+            this.Speed = 3;
 
             // Create the player's frame timer.
             this.FrameTimer = new Clock();
@@ -53,27 +54,59 @@ namespace Surrounded.Source.Game
             bool wasWalking = this.Walking;
             if (keyCode == Keyboard.Key.Down)
             {
+                Vector2f newPosition = new Vector2f(this.Position.X, this.Position.Y + this.Speed);
+                if (this.CurrentWorld.CanMoveTo(this.GetCorners(newPosition, 32, 48)))
+                {
+                    this.Position = newPosition;
+                    this.Walking = true;
+                }
+                else
+                {
+                    this.Walking = false;
+                }
                 this.Direction = 0;
-                this.Position = new Vector2f(this.Position.X, this.Position.Y + 3);
-                this.Walking = true;
             }
             else if (keyCode == Keyboard.Key.Left)
             {
+                Vector2f newPosition = new Vector2f(this.Position.X - this.Speed, this.Position.Y);
+                if (this.CurrentWorld.CanMoveTo(this.GetCorners(newPosition, 32, 48)))
+                {
+                    this.Position = newPosition;
+                    this.Walking = true;
+                }
+                else
+                {
+                    this.Walking = false;
+                }
                 this.Direction = 1;
-                this.Position = new Vector2f(this.Position.X - 3, this.Position.Y);
-                this.Walking = true;
             }
             else if (keyCode == Keyboard.Key.Right)
             {
+                Vector2f newPosition = new Vector2f(this.Position.X + this.Speed, this.Position.Y);
+                if (this.CurrentWorld.CanMoveTo(this.GetCorners(newPosition, 32, 48)))
+                {
+                    this.Position = newPosition;
+                    this.Walking = true;
+                }
+                else
+                {
+                    this.Walking = false;
+                }
                 this.Direction = 2;
-                this.Position = new Vector2f(this.Position.X + 3, this.Position.Y);
-                this.Walking = true;
             }
             else if (keyCode == Keyboard.Key.Up)
             {
+                Vector2f newPosition = new Vector2f(this.Position.X, this.Position.Y - this.Speed);
+                if (this.CurrentWorld.CanMoveTo(this.GetCorners(newPosition, 32, 48)))
+                {
+                    this.Position = newPosition;
+                    this.Walking = true;
+                }
+                else
+                {
+                    this.Walking = false;
+                }
                 this.Direction = 3;
-                this.Position = new Vector2f(this.Position.X, this.Position.Y - 3);
-                this.Walking = true;
             }
 
             // If they just started walking, reset the frame timer to prevent a gliding effect.
@@ -156,6 +189,7 @@ namespace Surrounded.Source.Game
 
             // Update position.
             Listener.Position = new Vector3f(this.Position.X, this.Position.Y, 0);
+            game.SetView(new View(this.Position, new Vector2f(Math.Min(game.Size.X, 640), Math.Min(game.Size.X, 640) / 1.7F)));
 
             // Add a light.
             this.Light.Position = this.Position;
@@ -164,6 +198,17 @@ namespace Surrounded.Source.Game
             // Update the sprite's texture.
             this.Sprite.Position = this.Position;
             this.Sprite.TextureRect = new IntRect(Step * 32, Direction * 48, 32, 48);
+        }
+
+        // Gets the sprite's corners.
+        public Vector2f[] GetCorners(Vector2f position, float width, float height)
+        {
+            return new Vector2f[] {
+                new Vector2f(position.X - (width / 2), position.Y - (height / 2)),
+                new Vector2f(position.X - (width / 2), position.Y + (height / 2)),
+                new Vector2f(position.X + (width / 2), position.Y - (height / 2)),
+                new Vector2f(position.X + (width / 2), position.Y + (height / 2))
+            };
         }
     }
 }

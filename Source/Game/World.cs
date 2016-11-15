@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 using SFML.Graphics;
 using SFML.System;
@@ -18,35 +19,33 @@ namespace Surrounded.Source.Game
         public Vector2f SpawnPoint;
 
         // Class constructor.
-        public World(string fileName)
+        public World()
         {
-
+            this.UpperLayers = new Sprite(new Texture(Path.Combine(Environment.CurrentDirectory, "files", "textures", "upper_layers.png")));
+            this.LowerLayers = new Sprite(new Texture(Path.Combine(Environment.CurrentDirectory, "files", "textures", "lower_layers.png")));
+            this.CollisionMap = new Image(Path.Combine(Environment.CurrentDirectory, "files", "textures", "collisions.png"));
+            this.SpawnPoint = new Vector2f(300, 300);
         }
 
         // Checks if a player can move to this specific point.
-        public bool CanMoveTo(Vector2f position, bool noClip = false)
+        public bool CanMoveTo(Vector2f[] corners, bool noClip = false)
         {
-            if ((position.X > this.CollisionMap.Size.X || position.X < 0) || (position.Y > this.CollisionMap.Size.Y || position.Y < 0))
+            int cornersMatched = 0;
+            for (int corner = 0; corner < corners.Length; ++corner)
             {
-                return false;
-            }
-            else
-            {
-                if (noClip || this.CollisionMap.GetPixel(Convert.ToUInt32(position.X), Convert.ToUInt32(position.Y)).A < 255)
-                {
-                    return true;
-                }
-                else
+                if ((corners[corner].X >= this.CollisionMap.Size.X || corners[corner].X <= 0) || (corners[corner].Y >= this.CollisionMap.Size.Y || corners[corner].Y <= 0))
                 {
                     return false;
                 }
+                else
+                {
+                    if (noClip || this.CollisionMap.GetPixel(Convert.ToUInt32(corners[corner].X), Convert.ToUInt32(corners[corner].Y)).A < 255)
+                    {
+                        ++cornersMatched;
+                    }
+                }
             }
-        }
-
-        // Calculates the player's speed on a specific point.
-        public float CalculateSpeed(Vector2f position, float baseSpeed)
-        {
-            return baseSpeed * (1.0F - (this.CollisionMap.GetPixel(Convert.ToUInt32(position.X), Convert.ToUInt32(position.Y)).A / 255));
+            return cornersMatched == 4;
         }
     }
 }
