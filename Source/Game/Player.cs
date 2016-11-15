@@ -176,21 +176,21 @@ namespace Surrounded.Source.Game
             }
 
             // If the player turned, change the direction of the listener.
-            if (this.Direction == 0)
+            if (this.Direction == 0) // Down.
             {
-                Listener.Direction = new Vector3f(0, -1, 0);
+                Listener.Direction = new Vector3f(0, 1, 0);
             }
-            else if (this.Direction == 1)
-            {
-                Listener.Direction = new Vector3f(1, 0, 0);
-            }
-            else if (this.Direction == 2)
+            else if (this.Direction == 1) // Left.
             {
                 Listener.Direction = new Vector3f(-1, 0, 0);
             }
-            else if (this.Direction == 3)
+            else if (this.Direction == 2) // Right.
             {
-                Listener.Direction = new Vector3f(0, 1, 0);
+                Listener.Direction = new Vector3f(1, 0, 0);
+            }
+            else if (this.Direction == 3) // Up.
+            {
+                Listener.Direction = new Vector3f(0, -1, 0);
             }
 
             // Update positions.
