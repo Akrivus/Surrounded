@@ -28,7 +28,7 @@ namespace Surrounded.Source
         public Player Player;
         public World World;
 
-        public bool DrawDarkness = false;
+        public bool DrawDarkness = true;
 
         // The foreground image, used to create a dark effect.
         public RenderTexture Darkness;
