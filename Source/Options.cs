@@ -12,7 +12,7 @@ namespace Surrounded.Source
         private string fileName;
         
         // Options.
-        public bool Fullscreen = true;
+        public bool Fullscreen = false;
         public uint Width = 960;
         public uint Height = 540;
         public uint AntialiasingLevel = 8;

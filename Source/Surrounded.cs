@@ -15,35 +15,40 @@ namespace Surrounded.Source
 {
     public class Surrounded : RenderWindow
     {
-        // Global variables accessible by the entire program.
+        // These are required by game instance, but should not be a part of it.
         public static Options Options;
         public static Image Icon;
         public static Random RNG;
         public static bool SteamOnline;
 
-        // The game instance itself.
+        // This is the game instance itself, and therefore should be accessible to all.
         public static Surrounded Instance;
         
-        // The player and other non-rendering related game elements.
+        // These are static in order to be safe while the game window is closed.
         public static Player Player;
-        public static World World;
+        public static Map Map;
 
+        // This will be removed in the future.
         public bool DrawDarkness = true;
 
         // The foreground image, used to create a dark effect.
         public RenderTexture Darkness;
-        public List<Sprite> Lights;
+        public List<Light> Lights;
+
+        // Frame timers.
+        public Clock FrameTimer;
+        public uint Frames;
 
         // The program's entry point.
         public static void Main(string[] args)
         {
-            // Set game variables.
+            // Set the static game variables.
             Surrounded.Options = Options.Load(args.Length > 0 ? args[0] : "options");
             Surrounded.Icon = new Image(Path.Combine(Environment.CurrentDirectory, "icon.png"));
             Surrounded.RNG = new Random();
-            Surrounded.SteamOnline = SteamAPI.Init();
 
-            // Check Steam API.
+            // Check the Steam API.
+            Surrounded.SteamOnline = SteamAPI.Init();
             if (Surrounded.SteamOnline)
             {
                 Console.WriteLine("Steam is connected!");
@@ -57,21 +62,22 @@ namespace Surrounded.Source
                 Console.WriteLine("Steam is not connected.");
             }
             
-            // Load up all the worldly stuff.
-            Surrounded.World = new World();
-            Surrounded.Player = new Player(Surrounded.World);
+            // Load up the other game stuff.
+            Surrounded.Player = new Player();
+            Surrounded.Map = new Map(Surrounded.Player);
 
             // Start the game.
             Surrounded.Instance = new Surrounded();
         }
 
         // Class constructor.
-        public Surrounded() : base(Surrounded.Options.Fullscreen ? VideoMode.DesktopMode : new VideoMode(Surrounded.Options.Width, Surrounded.Options.Height), "Surrounded", Surrounded.Options.Fullscreen ? Styles.Fullscreen : Styles.Default, new ContextSettings(24, 24, Surrounded.Options.AntialiasingLevel))
+        public Surrounded() : base(Surrounded.Options.Fullscreen ? VideoMode.DesktopMode : new VideoMode(Surrounded.Options.Width, Surrounded.Options.Height), "Surrounded", Surrounded.Options.Fullscreen ? Styles.Fullscreen : Styles.Close, new ContextSettings(24, 24, Surrounded.Options.AntialiasingLevel))
         {
             // Set window options.
             this.SetFramerateLimit(Surrounded.Options.FramerateLimit);
             this.SetIcon(Surrounded.Icon.Size.X, Surrounded.Icon.Size.Y, Surrounded.Icon.Pixels);
-            this.SetMouseCursorVisible(false);
+            this.SetMouseCursorVisible(true);
+            this.SetTitle("Surrounded [FPS: Loading...]");
             this.SetVerticalSyncEnabled(Surrounded.Options.VerticalSync);
 
             // Window event handlers.
@@ -100,7 +106,11 @@ namespace Surrounded.Source
 
             // Create foreground images and other effects.
             this.Darkness = new RenderTexture(VideoMode.DesktopMode.Width, VideoMode.DesktopMode.Height);
-            this.Lights = new List<Sprite>();
+            this.Lights = new List<Light>();
+
+            // Create frame timers and counters.
+            this.FrameTimer = new Clock();
+            this.Frames = 0;
 
             // Run the game!
             while (this.IsOpen)
@@ -108,24 +118,24 @@ namespace Surrounded.Source
                 // Update player input and window events before anything else.
                 this.DispatchEvents();
 
-                // Clear screen and foreground.
-                this.Clear(Color.Black);
-                this.Darkness.Clear(Color.Black);
+                // Clear lights before logic because those work hand in hand.
                 this.Lights.Clear();
 
-                // Update player logic.
-                Surrounded.Player.Update(this);
+                // Update map logic.
+                Surrounded.Map.Update(this);
 
-                // Add lights to the foreground.
-                for (int Light = 0; Light < Lights.Count; ++Light)
+                // Begin rendering by first and foremost, clearing the screens.
+                this.Clear(Color.Black);
+                this.Darkness.Clear(Color.Black);
+
+                // Draw the map.
+                Surrounded.Map.Draw(this, this.Darkness);
+
+                // Draw the lights.
+                for (int i = 0; i < Lights.Count; ++i)
                 {
-                    this.Darkness.Draw(this.Lights[Light], RenderStates.Default);
+                    this.Darkness.Draw(Lights[i].Sprite, RenderStates.Default);
                 }
-
-                // Draw the following in the exact order.
-                this.Draw(Surrounded.World.LowerLayers, RenderStates.Default);
-                this.Draw(Surrounded.Player.Sprite, RenderStates.Default);
-                this.Draw(Surrounded.World.UpperLayers, RenderStates.Default);
 
                 // Draw foreground image.
                 this.Darkness.Display();
@@ -133,7 +143,21 @@ namespace Surrounded.Source
                 {
                     this.Draw(new Sprite(this.Darkness.Texture), new RenderStates(BlendMode.Multiply));
                 }
+
+                // Draw the screen.
                 this.Display();
+
+                // Get FPS.
+                if (this.FrameTimer.ElapsedTime.AsMilliseconds() > 1000)
+                {
+                    this.FrameTimer.Restart();
+                    this.SetTitle("Surrounded [FPS: " + this.Frames + "]");
+                    this.Frames = 0;
+                }
+                else
+                {
+                    ++this.Frames;
+                }
             }
         }
 
@@ -234,8 +258,9 @@ namespace Surrounded.Source
         // Fired when a mouse button is pressed.
         private void OnMouseButtonPressed(object sender, MouseButtonEventArgs e)
         {
+            Surrounded.Map.AddLight(new Light(MapPixelToCoords(new Vector2i(e.X, e.Y)), new Color(Convert.ToByte(RNG.Next(255)), Convert.ToByte(RNG.Next(255)), Convert.ToByte(RNG.Next(255)))));
             Sound sound = new Sound(new SoundBuffer(Path.Combine(Environment.CurrentDirectory, "files", "sounds", "click.wav")));
-            sound.Position = new Vector3f(e.X, e.Y, 0);
+            sound.Position = new Vector3f(MapPixelToCoords(new Vector2i(e.X, e.Y)).X, MapPixelToCoords(new Vector2i(e.X, e.Y)).Y, 0);
             sound.Play();
         }
 
