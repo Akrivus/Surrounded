@@ -159,7 +159,7 @@ namespace Surrounded.Source
         // Fired when the window resizes.
         private void OnResized(object sender, SizeEventArgs e)
         {
-            this.Darkness = new RenderTexture(e.Width, e.Height);
+            
         }
 
         // Fired when a joystick button is pressed.
