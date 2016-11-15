@@ -45,111 +45,47 @@ namespace Surrounded.Source.Game
             this.Position = this.CurrentMap.SpawnPoint;
         }
 
+        // Moves the player's position by direction, provided a valid movement.
+        public void Move()
+        {
+            Vector2f newPosition;
+            if (this.Direction == 0) { newPosition = new Vector2f(this.Position.X, this.Position.Y + this.Speed); }
+            else if (this.Direction == 1) { newPosition = new Vector2f(this.Position.X - this.Speed, this.Position.Y); }
+            else if (this.Direction == 2) { newPosition = new Vector2f(this.Position.X + this.Speed, this.Position.Y); }
+            else if (this.Direction == 3) { newPosition = new Vector2f(this.Position.X, this.Position.Y - this.Speed); }
+            else { return; }
+
+            if (this.CurrentMap.CanMoveTo(this.GetCorners(newPosition, 32, 48))) { this.Position = newPosition; }
+        }
+
         // Called when the player presses a key.
         public void OnKeyPressed(Keyboard.Key keyCode, bool shiftDown)
         {
-            // Check if they were walking.
-            bool wasWalking = this.Walking;
+            // Determine direction.
+            if (keyCode == Keyboard.Key.Down) { this.Direction = 0; }
+            else if (keyCode == Keyboard.Key.Left) { this.Direction = 1; }
+            else if (keyCode == Keyboard.Key.Right) { this.Direction = 2; }
+            else if (keyCode == Keyboard.Key.Up) { this.Direction = 3; }
+            else { return; }
 
-            // Check what key was pressed.
-            if (keyCode == Keyboard.Key.Down)
-            {
-                // Create a new position and check if they are capable of moving to it.
-                Vector2f newPosition = new Vector2f(this.Position.X, this.Position.Y + this.Speed);
-                if (this.CurrentMap.CanMoveTo(this.GetCorners(newPosition, 32, 48)))
-                {
-                    this.Position = newPosition;
-                    this.Walking = true;
-                }
-                else
-                {
-                    this.Walking = false;
-                }
-                this.Direction = 0; // Down.
-            }
-            else if (keyCode == Keyboard.Key.Left)
-            {
-                // Create a new position and check if they are capable of moving to it.
-                Vector2f newPosition = new Vector2f(this.Position.X - this.Speed, this.Position.Y);
-                if (this.CurrentMap.CanMoveTo(this.GetCorners(newPosition, 32, 48)))
-                {
-                    this.Position = newPosition;
-                    this.Walking = true;
-                }
-                else
-                {
-                    this.Walking = false;
-                }
-                this.Direction = 1; // Left.
-            }
-            else if (keyCode == Keyboard.Key.Right)
-            {
-                // Create a new position and check if they are capable of moving to it.
-                Vector2f newPosition = new Vector2f(this.Position.X + this.Speed, this.Position.Y);
-                if (this.CurrentMap.CanMoveTo(this.GetCorners(newPosition, 32, 48)))
-                {
-                    this.Position = newPosition;
-                    this.Walking = true;
-                }
-                else
-                {
-                    this.Walking = false;
-                }
-                this.Direction = 2; // Right.
-            }
-            else if (keyCode == Keyboard.Key.Up)
-            {
-                // Create a new position and check if they are capable of moving to it.
-                Vector2f newPosition = new Vector2f(this.Position.X, this.Position.Y - this.Speed);
-                if (this.CurrentMap.CanMoveTo(this.GetCorners(newPosition, 32, 48)))
-                {
-                    this.Position = newPosition;
-                    this.Walking = true;
-                }
-                else
-                {
-                    this.Walking = false;
-                }
-                this.Direction = 3; // Up.
-            }
-
-            // If they just started walking, reset the frame timer to prevent a gliding effect.
-            if (this.Walking && !wasWalking)
-            {
-                this.FrameTimer.Restart();
-            }
+            // Will only be called if one of the first four keys (directional) are pressed.
+            this.Walking = true;
         }
 
         // Called when the player releases a key.
         public void OnKeyReleased(Keyboard.Key keyCode, bool shiftDown)
         {
-            // Check what key was pressed.
-            if (keyCode == Keyboard.Key.Down)
-            {
-                this.Direction = 0; // Down.
-                this.Walking = false;
-            }
-            else if (keyCode == Keyboard.Key.Left)
-            {
-                this.Direction = 1; // Left.
-                this.Walking = false;
-            }
-            else if (keyCode == Keyboard.Key.Right)
-            {
-                this.Direction = 2; // Right.
-                this.Walking = false;
-            }
-            else if (keyCode == Keyboard.Key.Up)
-            {
-                this.Direction = 3; // Up.
-                this.Walking = false;
-            }
+            // Determine direction.
+            if (keyCode == Keyboard.Key.Down) { this.Direction = 0; }
+            else if (keyCode == Keyboard.Key.Left) { this.Direction = 1; }
+            else if (keyCode == Keyboard.Key.Right) { this.Direction = 2; }
+            else if (keyCode == Keyboard.Key.Up) { this.Direction = 3; }
+            else { return; }
 
             // If they stopped walking, go into a standing position.
-            if (!this.Walking)
-            {
-                this.Step = 0;
-            }
+            // Will only be called if one of the first four keys (directional) are pressed.
+            this.Walking = false;
+            this.Step = 0;
         }
 
         // Called when the player needs to be updated.
@@ -158,6 +94,7 @@ namespace Surrounded.Source.Game
             // Update the sprite's frame if the sprite is walking.
             if (this.Walking)
             {
+                this.Move();
                 // Change the frame every 0.3 seconds, adjust if necessary.
                 if (this.FrameTimer.ElapsedTime.AsMilliseconds() > 300)
                 {
