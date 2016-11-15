@@ -23,10 +23,10 @@ namespace Surrounded.Source
 
         // The game instance itself.
         public static Surrounded Instance;
-
+        
         // The player and other non-rendering related game elements.
-        public Player Player;
-        public World World;
+        public static Player Player;
+        public static World World;
 
         public bool DrawDarkness = true;
 
@@ -42,17 +42,6 @@ namespace Surrounded.Source
             Surrounded.Icon = new Image(Path.Combine(Environment.CurrentDirectory, "icon.png"));
             Surrounded.RNG = new Random();
             Surrounded.SteamOnline = SteamAPI.Init();
-            Surrounded.Instance = new Surrounded();
-        }
-
-        // Class constructor.
-        public Surrounded() : base(Surrounded.Options.Fullscreen ? VideoMode.DesktopMode : new VideoMode(Surrounded.Options.Width, Surrounded.Options.Height), "Surrounded", Surrounded.Options.Fullscreen ? Styles.Fullscreen : Styles.Default, new ContextSettings(24, 24, Surrounded.Options.AntialiasingLevel))
-        {
-            // Set window options.
-            this.SetFramerateLimit(Surrounded.Options.FramerateLimit);
-            this.SetIcon(Surrounded.Icon.Size.X, Surrounded.Icon.Size.Y, Surrounded.Icon.Pixels);
-            this.SetMouseCursorVisible(false);
-            this.SetVerticalSyncEnabled(Surrounded.Options.VerticalSync);
 
             // Check Steam API.
             if (Surrounded.SteamOnline)
@@ -67,6 +56,23 @@ namespace Surrounded.Source
             {
                 Console.WriteLine("Steam is not connected.");
             }
+            
+            // Load up all the worldly stuff.
+            Surrounded.World = new World();
+            Surrounded.Player = new Player(Surrounded.World);
+
+            // Start the game.
+            Surrounded.Instance = new Surrounded();
+        }
+
+        // Class constructor.
+        public Surrounded() : base(Surrounded.Options.Fullscreen ? VideoMode.DesktopMode : new VideoMode(Surrounded.Options.Width, Surrounded.Options.Height), "Surrounded", Surrounded.Options.Fullscreen ? Styles.Fullscreen : Styles.Default, new ContextSettings(24, 24, Surrounded.Options.AntialiasingLevel))
+        {
+            // Set window options.
+            this.SetFramerateLimit(Surrounded.Options.FramerateLimit);
+            this.SetIcon(Surrounded.Icon.Size.X, Surrounded.Icon.Size.Y, Surrounded.Icon.Pixels);
+            this.SetMouseCursorVisible(false);
+            this.SetVerticalSyncEnabled(Surrounded.Options.VerticalSync);
 
             // Window event handlers.
             this.Closed += this.OnClosed;
@@ -92,10 +98,6 @@ namespace Surrounded.Source
             this.MouseMoved += this.OnMouseMoved;
             this.MouseWheelMoved += this.OnMouseWheelMoved;
 
-            // Create the player.
-            this.World = new World();
-            this.Player = new Player(this.World);
-
             // Create foreground images and other effects.
             this.Darkness = new RenderTexture(VideoMode.DesktopMode.Width, VideoMode.DesktopMode.Height);
             this.Lights = new List<Sprite>();
@@ -112,7 +114,7 @@ namespace Surrounded.Source
                 this.Lights.Clear();
 
                 // Update player logic.
-                this.Player.Update(this);
+                Surrounded.Player.Update(this);
 
                 // Add lights to the foreground.
                 for (int Light = 0; Light < Lights.Count; ++Light)
@@ -121,9 +123,9 @@ namespace Surrounded.Source
                 }
 
                 // Draw the following in the exact order.
-                this.Draw(this.World.LowerLayers, RenderStates.Default);
-                this.Draw(this.Player.Sprite, RenderStates.Default);
-                this.Draw(this.World.UpperLayers, RenderStates.Default);
+                this.Draw(Surrounded.World.LowerLayers, RenderStates.Default);
+                this.Draw(Surrounded.Player.Sprite, RenderStates.Default);
+                this.Draw(Surrounded.World.UpperLayers, RenderStates.Default);
 
                 // Draw foreground image.
                 this.Darkness.Display();
@@ -193,7 +195,7 @@ namespace Surrounded.Source
         // Fired when a key is pressed.
         private void OnKeyPressed(object sender, KeyEventArgs e)
         {
-            this.Player.OnKeyPressed(e.Code, e.Shift);
+            Surrounded.Player.OnKeyPressed(e.Code, e.Shift);
         }
 
         // Fired when a key is released.
@@ -220,7 +222,7 @@ namespace Surrounded.Source
             {
                 this.DrawDarkness = !this.DrawDarkness;
             }
-            this.Player.OnKeyReleased(e.Code, e.Shift);
+            Surrounded.Player.OnKeyReleased(e.Code, e.Shift);
         }
 
         // Fired when a ASCII key is pressed.
