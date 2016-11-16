@@ -10,6 +10,7 @@ using SFML.System;
 using SFML.Window;
 
 using Surrounded.Source.Game.Render;
+using System.Collections.Generic;
 
 namespace Surrounded.Source.Game
 {
@@ -33,6 +34,7 @@ namespace Surrounded.Source.Game
             Keyboard.Key.LControl,
             Keyboard.Key.Q
         };
+        private List<int> LastDirections = new List<int>();
 
         // These are system things used for memory management.
         private SafeHandle Handle = new SafeFileHandle(IntPtr.Zero, true);
@@ -68,34 +70,47 @@ namespace Surrounded.Source.Game
             this.Position = this.CurrentMap.SpawnPoint;
         }
 
+        // Handles movement.
         private void HandleMovement()
         {
             for (int i = 0; i < Player.MovementKeys.Length; ++i)
             {
-                if (Keyboard.IsKeyPressed(Player.MovementKeys[i]))
+                int Direction = Directions.GetDirectionFromKey(Player.MovementKeys[i]);
+                if (Keyboard.IsKeyPressed(Player.MovementKeys[i]) && !LastDirections.Contains(Direction))
                 {
-                    this.Sprite.Direction = Directions.GetDirectionFromKey(Player.MovementKeys[i]);
-                    Vector2f newPosition = Directions.MoveVectorInDirection(this.Sprite.GetCorners(this.Position), this.Sprite.Direction, this.Speed);
-                    this.Attacking = false;
-
-                    // Did we really walk though?
-                    if (this.CurrentMap.CanMoveTo(this.Sprite.GetCorners(newPosition)))
-                    {
-                        this.Walking = true;
-                        this.Position = newPosition;
-                        break;
-                    }
-                    else
-                    {
-                        this.Walking = false;
-                    }
-
+                    LastDirections.Add(Direction);
                 }
-                this.Walking = false;
+                else if (LastDirections.Contains(Direction))
+                {
+                    LastDirections.Remove(Direction);
+                }
             }
 
+            if (LastDirections.Count > 0)
+            {
+                int LastDirection = LastDirections[LastDirections.Count - 1];
+                this.Sprite.Direction = LastDirection;
+                Vector2f newPosition = Directions.MoveVectorInDirection(this.Sprite.GetCorners(this.Position), LastDirection, this.Speed);
+                //this.Attacking = false;
+
+                // Did we really walk though?
+                if (this.CurrentMap.CanMoveTo(this.Sprite.GetCorners(newPosition)))
+                {
+                    this.Walking = true;
+                    this.Position = newPosition;
+                }
+                else
+                {
+                    this.Walking = false;
+                }
+            }
+            else
+            {
+                this.Walking = false;
+            }
         }
 
+        // Handles attack keys.
         private void HandleControl()
         {
             // Get the direct key input.
@@ -110,6 +125,7 @@ namespace Surrounded.Source.Game
             }
         }
 
+        // Checks if player is attacking.
         private void HandleStatus()
         {
             if (this.Health < 1)
@@ -125,6 +141,7 @@ namespace Surrounded.Source.Game
         // Called when the player needs to be updated.
         public void Update(Surrounded game)
         {
+            // Handles input.
             HandleMovement();
             HandleControl();
             HandleStatus();
