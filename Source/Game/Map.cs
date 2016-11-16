@@ -1,14 +1,21 @@
-﻿using System;
+﻿using Microsoft.Win32.SafeHandles;
+
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 
 using SFML.Graphics;
 using SFML.System;
 
 namespace Surrounded.Source.Game
 {
-    public class Map
+    public class Map : IDisposable
     {
+        // These are system things used for memory management.
+        private SafeHandle Handle = new SafeFileHandle(IntPtr.Zero, true);
+        private bool Disposed = false;
+
         // These are the visual parts of the map that we see.
         private Sprite UpperLayers;
         private Sprite LowerLayers;
@@ -90,6 +97,44 @@ namespace Surrounded.Source.Game
 
             // Draw the layer that will go above the player.
             this.UpperLayers.Draw(surface, RenderStates.Default);
+        }
+
+        // Disposes the object.
+        public void Dispose()
+        {
+            this.Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        // Protected implementation of Dispose pattern.
+        protected virtual void Dispose(bool disposing)
+        {
+            // If this is already disposed, then ignore.
+            if (this.Disposed)
+            {
+                return;
+            }
+            else if (disposing)
+            {
+                // Dispose all other disposable objects here.
+                this.UpperLayers.Dispose();
+                this.LowerLayers.Dispose();
+                this.Player.Dispose();
+
+                // Dispose all of the lights.
+                for (int i = 0; i < Lights.Count; ++i)
+                {
+                    this.Lights[i].Dispose();
+                }
+
+                // Continue disposing all the disposables.
+                this.CollisionMap.Dispose();
+
+                // Finish with the object itself.
+                Handle.Dispose();
+            }
+            // We're disposed now.
+            this.Disposed = true;
         }
     }
 }
