@@ -149,9 +149,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Source\Game\Entities\Entity.cs" />
     <Compile Include="Source\Game\Light.cs" />
     <Compile Include="Source\Game\Player.cs" />
     <Compile Include="Source\Game\Map.cs" />
+    <Compile Include="Source\Game\Render\AnimatedSprite.cs" />
+    <Compile Include="Source\Game\Render\Directions.cs" />
     <Compile Include="Source\Surrounded.cs" />
     <Compile Include="Source\Options.cs" />
   </ItemGroup>
@@ -159,7 +162,6 @@
     <Content Include="icon.ico" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Source\Game\Entities\" />
     <Folder Include="Source\Game\Objects\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

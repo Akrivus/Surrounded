@@ -76,6 +76,7 @@ namespace Surrounded.Source
             // Set window options.
             this.SetFramerateLimit(Surrounded.Options.FramerateLimit);
             this.SetIcon(Surrounded.Icon.Size.X, Surrounded.Icon.Size.Y, Surrounded.Icon.Pixels);
+            this.SetKeyRepeatEnabled(true);
             this.SetMouseCursorVisible(true);
             this.SetTitle("Surrounded [FPS: Loading...]");
             this.SetVerticalSyncEnabled(Surrounded.Options.VerticalSync);
@@ -119,6 +120,10 @@ namespace Surrounded.Source
                 this.DispatchEvents();
 
                 // Clear lights before logic because those work hand in hand.
+                for (int i = 0; i < Lights.Count; ++i)
+                {
+                    this.Lights[i].Dispose();
+                }
                 this.Lights.Clear();
 
                 // Update map logic.
@@ -134,7 +139,7 @@ namespace Surrounded.Source
                 // Draw the lights.
                 for (int i = 0; i < Lights.Count; ++i)
                 {
-                    this.Darkness.Draw(Lights[i].Sprite, RenderStates.Default);
+                    this.Darkness.Draw(Lights[i], RenderStates.Default);
                 }
 
                 // Draw foreground image.
@@ -219,7 +224,7 @@ namespace Surrounded.Source
         // Fired when a key is pressed.
         private void OnKeyPressed(object sender, KeyEventArgs e)
         {
-            Surrounded.Player.OnKeyPressed(e.Code, e.Shift);
+            
         }
 
         // Fired when a key is released.
@@ -246,7 +251,6 @@ namespace Surrounded.Source
             {
                 this.DrawDarkness = !this.DrawDarkness;
             }
-            Surrounded.Player.OnKeyReleased(e.Code, e.Shift);
         }
 
         // Fired when a ASCII key is pressed.

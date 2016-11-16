@@ -6,25 +6,15 @@ using SFML.System;
 
 namespace Surrounded.Source.Game
 {
-    public class Light
+    public class Light : Sprite
     {
-        // The drawn image itself.
-        public Sprite Sprite;
-        
         // Class constructor.
-        public Light(Vector2f position, Color color, float size = 1.0F, string fileName = "circle")
+        public Light(Vector2f position, Color color, float size = 1.0F, string fileName = "circle") : base(new Texture(Path.Combine(Environment.CurrentDirectory, "files", "textures", "light", fileName + ".png")))
         {
-            this.Sprite = new Sprite(new Texture(Path.Combine(Environment.CurrentDirectory, "files", "textures", "light", fileName + ".png")));
-            this.Sprite.Origin = new Vector2f(64, 64);
-            this.Sprite.Position = position;
-            this.Sprite.Color = color;
-            this.Sprite.Scale = new Vector2f(size, size);
-        }
-
-        // Secondary class constructor.
-        public Light(Sprite sprite)
-        {
-            this.Sprite = sprite;
+            this.Origin = new Vector2f(64, 64);
+            this.Position = position;
+            this.Color = color;
+            this.Scale = new Vector2f(size, size);
         }
     }
 }

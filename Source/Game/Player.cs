@@ -1,50 +1,64 @@
-﻿using System;
+﻿using Microsoft.Win32.SafeHandles;
+
+using System;
 using System.IO;
+using System.Runtime.InteropServices;
 
 using SFML.Audio;
 using SFML.Graphics;
 using SFML.System;
 using SFML.Window;
-using System.Collections.Generic;
+
+using Surrounded.Source.Game.Render;
 
 namespace Surrounded.Source.Game
 {
-    public class Player
+    public class Player : IDisposable
     {
+        // This is used to get the input keys.
+        public static Keyboard.Key[] MovementKeys = new Keyboard.Key[]
+        {
+            Keyboard.Key.Down,
+            Keyboard.Key.Left,
+            Keyboard.Key.Right,
+            Keyboard.Key.Up,
+            Keyboard.Key.S,
+            Keyboard.Key.A,
+            Keyboard.Key.D,
+            Keyboard.Key.W
+        };
+        public static Keyboard.Key[] ControlKeys = new Keyboard.Key[]
+        {
+            Keyboard.Key.RControl,
+            Keyboard.Key.LControl,
+            Keyboard.Key.Q
+        };
+
+        // These are system things used for memory management.
+        private SafeHandle Handle = new SafeFileHandle(IntPtr.Zero, true);
+        private bool Disposed = false;
+
         // This is used to attach the player to a map object.
         private Map CurrentMap;
 
         // These are used explicitly for rendering.
-        private Sprite Sprite;
+        private AnimatedSprite Sprite;
         private Vector2f Position;
-        private Clock FrameTimer;
         private bool Walking;
-        private int Direction;
-        private Dictionary<Keyboard.Key, int> KeyToDirection = new Dictionary<Keyboard.Key, int>()
-        {
-            { Keyboard.Key.Down, 0 },
-            { Keyboard.Key.Left, 1 },
-            { Keyboard.Key.Right, 2 },
-            { Keyboard.Key.Up, 3 }
-        };
-        private int Step;
-        private List<Keyboard.Key> KeysPressed = new List<Keyboard.Key>();
+        private bool Attacking;
+        private bool Dead;
 
         // These are used as the player's stats.
         private float Health = 10.0F;
         private float Stamina = 5.0F;
         private float Stress = 0.0F;
-        private float Speed = 3.5F;
+        private float Speed = 2.0F;
 
         // Class constructor.
         public Player()
         {
             // Create the player sprite.
-            this.Sprite = new Sprite(new Texture(Path.Combine(Environment.CurrentDirectory, "files", "textures", "player.png")));
-            this.Sprite.Origin = new Vector2f(16, 24);
-
-            // Create the player's frame timer.
-            this.FrameTimer = new Clock();
+            this.Sprite = new AnimatedSprite(new Texture(Path.Combine(Environment.CurrentDirectory, "files", "textures", "player.png")), 120);
         }
 
         // Attaches the player to a map.
@@ -54,125 +68,113 @@ namespace Surrounded.Source.Game
             this.Position = this.CurrentMap.SpawnPoint;
         }
 
-        // Moves the player's position by direction, provided a valid movement.
-        public void Move()
+        private void HandleMovement()
         {
-            Vector2f newPosition;
-            if (this.Direction == 0) { newPosition = new Vector2f(this.Position.X, this.Position.Y + this.Speed); }
-            else if (this.Direction == 1) { newPosition = new Vector2f(this.Position.X - this.Speed, this.Position.Y); }
-            else if (this.Direction == 2) { newPosition = new Vector2f(this.Position.X + this.Speed, this.Position.Y); }
-            else if (this.Direction == 3) { newPosition = new Vector2f(this.Position.X, this.Position.Y - this.Speed); }
-            else { return; }
-
-            if (this.CurrentMap.CanMoveTo(this.GetCorners(newPosition, 32, 48))) { this.Position = newPosition; }
-        }
-
-        // Called when the player presses a key.
-        public void OnKeyPressed(Keyboard.Key keyCode, bool shiftDown)
-        {
-            // Determine direction.
-            if (KeyToDirection.ContainsKey(keyCode)) { this.Direction = KeyToDirection[keyCode]; }
-            else { return; }
-
-            // Will only be called if one of the first four keys (directional) are pressed.
-            this.Walking = true;
-            if (!KeysPressed.Contains(keyCode)) { KeysPressed.Add(keyCode); }
-        }
-
-        // Called when the player releases a key.
-        public void OnKeyReleased(Keyboard.Key keyCode, bool shiftDown)
-        {
-            // If they stopped walking, go into a standing position.
-            // If they're still holding another key, go to the second-most recent key pressed.
-            if (KeyToDirection.ContainsKey(keyCode))
+            for (int i = 0; i < Player.MovementKeys.Length; ++i)
             {
-                if (KeysPressed.IndexOf(keyCode) == KeysPressed.Count - 1)
+                if (Keyboard.IsKeyPressed(Player.MovementKeys[i]))
                 {
-                    if (KeysPressed.Count == 1)
+                    this.Sprite.Direction = Directions.GetDirectionFromKey(Player.MovementKeys[i]);
+                    Vector2f newPosition = Directions.MoveVectorInDirection(this.Sprite.GetCorners(this.Position), this.Sprite.Direction, this.Speed);
+                    this.Attacking = false;
+
+                    // Did we really walk though?
+                    if (this.CurrentMap.CanMoveTo(this.Sprite.GetCorners(newPosition)))
                     {
-                        this.Walking = false;
-                        this.Step = 0;
+                        this.Walking = true;
+                        this.Position = newPosition;
+                        break;
                     }
                     else
                     {
-                        this.Direction = KeyToDirection[KeysPressed[KeysPressed.IndexOf(keyCode) - 1]];
+                        this.Walking = false;
                     }
+
                 }
-                this.KeysPressed.Remove(keyCode);
+                this.Walking = false;
+            }
+
+        }
+
+        private void HandleControl()
+        {
+            // Get the direct key input.
+            for (int i = 0; i < Player.ControlKeys.Length; ++i)
+            {
+                if (Keyboard.IsKeyPressed(Player.ControlKeys[i]))
+                {
+                    this.Attacking = true;
+                    this.Walking = false;
+                    break;
+                }
+            }
+        }
+
+        private void HandleStatus()
+        {
+            if (this.Health < 1)
+            {
+                this.Dead = true;
+            }
+            if (this.Attacking && this.Sprite.Step != 3)
+            {
+                this.Attacking = false;
             }
         }
 
         // Called when the player needs to be updated.
         public void Update(Surrounded game)
         {
-            // Update the sprite's frame if the sprite is walking.
-            if (this.Walking)
-            {
-                this.Move();
-                // Change the frame every 0.3 seconds, adjust if necessary.
-                if (this.FrameTimer.ElapsedTime.AsMilliseconds() > 300)
-                {
-                    ++this.Step;
-                    if (this.Step > 2)
-                    {
-                        this.Step = 1;
-                    }
-                    this.FrameTimer.Restart();
-                }
-            }
-            else
-            {
-                // If we aren't walking, then stand.
-                Step = 0;
-            }
+            HandleMovement();
+            HandleControl();
+            HandleStatus();
 
-            // If the player turned, change the direction of the listener.
-            if (this.Direction == 0) // Down.
-            {
-                Listener.Direction = new Vector3f(0, 1, 0);
-            }
-            else if (this.Direction == 1) // Left.
-            {
-                Listener.Direction = new Vector3f(-1, 0, 0);
-            }
-            else if (this.Direction == 2) // Right.
-            {
-                Listener.Direction = new Vector3f(1, 0, 0);
-            }
-            else if (this.Direction == 3) // Up.
-            {
-                Listener.Direction = new Vector3f(0, -1, 0);
-            }
-
-            // Update positions.
+            // Update listener direction and position.
+            Listener.Direction = Directions.GetVectorFromDirection(this.Sprite.Direction);
             Listener.Position = new Vector3f(this.Position.X, this.Position.Y, 0);
+
+            // Update the sprite.
+            this.Sprite.Update(this.Position, this.Walking, this.Attacking, this.Dead);
+
+            // Update the camera position.
             game.SetView(new View(this.Position, new Vector2f(640, 360)));
-            this.Sprite.Position = this.Position;
 
             // Add the aura.
-            game.Lights.Add(new Light(this.Position, new Color(Convert.ToByte(Surrounded.RNG.Next(255)), Convert.ToByte(Surrounded.RNG.Next(255)), Convert.ToByte(Surrounded.RNG.Next(255))), 1.0F));
-
-            // Update the sprite's texture.
-            this.Sprite.TextureRect = new IntRect(Step * 32, Direction * 48, 32, 48);
-        }
-
-        // Gets the sprite's corners and origin.
-        public Vector2f[] GetCorners(Vector2f position, float width, float height)
-        {
-            // Return all four corners and the origin.
-            return new Vector2f[] {
-                new Vector2f(position.X - (width / 2), position.Y - (height / 2)),
-                new Vector2f(position.X - (width / 2), position.Y + (height / 2)),
-                new Vector2f(position.X + (width / 2), position.Y - (height / 2)),
-                new Vector2f(position.X + (width / 2), position.Y + (height / 2)),
-                new Vector2f(position.X, position.Y)
-            };
+            game.Lights.Add(new Light(this.Position, Color.Yellow, 1.0F));
         }
 
         // Provides instructions on drawing the player.
         public void Draw(RenderWindow surface, RenderTexture foreground)
         {
             this.Sprite.Draw(surface, RenderStates.Default);
+        }
+
+        // Disposes the object.
+        public void Dispose()
+        {
+            this.Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        // Protected implementation of Dispose pattern.
+        protected virtual void Dispose(bool disposing)
+        {
+            // If this is already disposed, then ignore.
+            if (this.Disposed)
+            {
+                return;
+            }
+            else if (disposing)
+            {
+                // Dispose all other disposable objects here.
+                this.CurrentMap.Dispose();
+                this.Sprite.Dispose();
+
+                // Finish with the object itself.
+                Handle.Dispose();
+            }
+            // We're disposed now.
+            this.Disposed = true;
         }
     }
 }

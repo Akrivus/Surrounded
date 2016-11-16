@@ -49,12 +49,12 @@ namespace Surrounded.Source
                 string text = fileReader.ReadToEnd();
                 options = JsonConvert.DeserializeObject<Options>(text);
                 options.SetFileName(fileName);
-                fileReader.Close();
+                fileReader.Dispose();
             }
             else
             {
                 // Create the options file.
-                File.Create(Path.Combine(Environment.CurrentDirectory, fileName + ".json")).Close();
+                File.Create(Path.Combine(Environment.CurrentDirectory, fileName + ".json")).Dispose();
                 options.Save();
             }
             return options;
