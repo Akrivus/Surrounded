@@ -73,16 +73,17 @@ namespace Surrounded.Source.Game
         // Handles movement.
         private void HandleMovement()
         {
-            for (int i = 0; i < Player.MovementKeys.Length; ++i)
+            for (int i = 0; i < Player.MovementKeys.Length / 2; ++i)
             {
                 int Direction = Directions.GetDirectionFromKey(Player.MovementKeys[i]);
-                if (Keyboard.IsKeyPressed(Player.MovementKeys[i]) && !LastDirections.Contains(Direction))
+                if (( Keyboard.IsKeyPressed(Player.MovementKeys[i]) || Keyboard.IsKeyPressed(Player.MovementKeys[i + 4]) ) && !LastDirections.Contains(Direction))
                 {
-                    LastDirections.Add(Direction);
+                    //Console.WriteLine(LastDirections.IndexOf(Direction));
+                    this.LastDirections.Add(Direction);
                 }
-                else if (LastDirections.Contains(Direction))
+                else if (!( Keyboard.IsKeyPressed(Player.MovementKeys[i]) || Keyboard.IsKeyPressed(Player.MovementKeys[i + 4])) && LastDirections.Contains(Direction))
                 {
-                    LastDirections.Remove(Direction);
+                    this.LastDirections.Remove(Direction);
                 }
             }
 
@@ -91,7 +92,7 @@ namespace Surrounded.Source.Game
                 int LastDirection = LastDirections[LastDirections.Count - 1];
                 this.Sprite.Direction = LastDirection;
                 Vector2f newPosition = Directions.MoveVectorInDirection(this.Sprite.GetCorners(this.Position), LastDirection, this.Speed);
-                //this.Attacking = false;
+                this.Attacking = false;
 
                 // Did we really walk though?
                 if (this.CurrentMap.CanMoveTo(this.Sprite.GetCorners(newPosition)))
