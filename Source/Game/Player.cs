@@ -54,7 +54,7 @@ namespace Surrounded.Source.Game
         private float Health = 10.0F;
         private float Stamina = 5.0F;
         private float Stress = 0.0F;
-        private float Speed = 2.0F;
+        private int Speed = 2;
 
         // Class constructor.
         public Player()
@@ -78,7 +78,6 @@ namespace Surrounded.Source.Game
                 int Direction = Directions.GetDirectionFromKey(Player.MovementKeys[i]);
                 if (( Keyboard.IsKeyPressed(Player.MovementKeys[i]) || Keyboard.IsKeyPressed(Player.MovementKeys[i + 4]) ) && !LastDirections.Contains(Direction))
                 {
-                    //Console.WriteLine(LastDirections.IndexOf(Direction));
                     this.LastDirections.Add(Direction);
                 }
                 else if (!( Keyboard.IsKeyPressed(Player.MovementKeys[i]) || Keyboard.IsKeyPressed(Player.MovementKeys[i + 4])) && LastDirections.Contains(Direction))
@@ -91,18 +90,21 @@ namespace Surrounded.Source.Game
             {
                 int LastDirection = LastDirections[LastDirections.Count - 1];
                 this.Sprite.Direction = LastDirection;
-                Vector2f newPosition = Directions.MoveVectorInDirection(this.Sprite.GetCorners(this.Position), LastDirection, this.Speed);
                 this.Attacking = false;
 
-                // Did we really walk though?
-                if (this.CurrentMap.CanMoveTo(this.Sprite.GetCorners(newPosition)))
-                {
-                    this.Walking = true;
-                    this.Position = newPosition;
-                }
-                else
-                {
-                    this.Walking = false;
+                for (int i = 0; i <= this.Speed; ++i) {
+                    Vector2f newPosition = Directions.MoveVectorInDirection(this.Sprite.GetCorners(this.Position), LastDirection, 1);
+
+                    // Did we really walk though?
+                    if (this.CurrentMap.CanMoveTo(this.Sprite.GetCorners(newPosition)))
+                    {
+                        this.Walking = true;
+                        this.Position = newPosition;
+                    }
+                    else
+                    {
+                        this.Walking = false;
+                    }
                 }
             }
             else
