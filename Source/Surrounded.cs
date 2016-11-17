@@ -64,7 +64,7 @@ namespace Surrounded.Source
             
             // Load up the other game stuff.
             Surrounded.Player = new Player();
-            Surrounded.Map = new Map(Surrounded.Player);
+            Surrounded.Map = new Map(Surrounded.Player, "default");
 
             // Start the game.
             Surrounded.Instance = new Surrounded();
@@ -148,6 +148,9 @@ namespace Surrounded.Source
                 {
                     this.Draw(new Sprite(this.Darkness.Texture), new RenderStates(BlendMode.Multiply));
                 }
+
+                // Draw the map name.
+                Surrounded.Map.Name.Draw(this, RenderStates.Default);
 
                 // Draw the screen.
                 this.Display();
@@ -262,10 +265,7 @@ namespace Surrounded.Source
         // Fired when a mouse button is pressed.
         private void OnMouseButtonPressed(object sender, MouseButtonEventArgs e)
         {
-            Surrounded.Map.AddLight(new Light(MapPixelToCoords(new Vector2i(e.X, e.Y)), new Color(Convert.ToByte(RNG.Next(255)), Convert.ToByte(RNG.Next(255)), Convert.ToByte(RNG.Next(255)))));
-            Sound sound = new Sound(new SoundBuffer(Path.Combine(Environment.CurrentDirectory, "files", "sounds", "click.wav")));
-            sound.Position = new Vector3f(MapPixelToCoords(new Vector2i(e.X, e.Y)).X, MapPixelToCoords(new Vector2i(e.X, e.Y)).Y, 0);
-            sound.Play();
+
         }
 
         // Fired when a mouse button is released.

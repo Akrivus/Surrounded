@@ -8,6 +8,10 @@ using System.Runtime.InteropServices;
 using SFML.Graphics;
 using SFML.System;
 
+using Newtonsoft.Json;
+
+using Surrounded.Source.Game.Entities;
+
 namespace Surrounded.Source.Game
 {
     public class Map : IDisposable
@@ -21,27 +25,63 @@ namespace Surrounded.Source.Game
         private Sprite LowerLayers;
 
         // These are players and other drawable objects that are bound to change.
-        private Player Player;
         private List<Light> Lights;
+        private List<Entity> Entities;
+        private Player Player;
 
         // This is the set of pixels used to determine where something can and can't move.
         private Image CollisionMap;
 
         // This is the player's spawnpoint.
         public Vector2f SpawnPoint;
+        public Text Name;
 
         // Class constructor.
-        public Map(Player player)
+        public Map(Player player, string fileName)
         {
-            this.UpperLayers = new Sprite(new Texture(Path.Combine(Environment.CurrentDirectory, "files", "textures", "upper_layers.png")));
-            this.LowerLayers = new Sprite(new Texture(Path.Combine(Environment.CurrentDirectory, "files", "textures", "lower_layers.png")));
-            this.CollisionMap = new Image(Path.Combine(Environment.CurrentDirectory, "files", "textures", "collisions.png"));
+            // Loads the map from the computer.
+            this.UpperLayers = new Sprite(new Texture(Path.Combine(Environment.CurrentDirectory, "files", "maps", fileName, "upper_layers.png")));
+            this.LowerLayers = new Sprite(new Texture(Path.Combine(Environment.CurrentDirectory, "files", "maps", fileName, "lower_layers.png")));
+            this.CollisionMap = new Image(Path.Combine(Environment.CurrentDirectory, "files", "maps", fileName, "collisions.png"));
 
-            this.SpawnPoint = new Vector2f(300, 300);
+            // Create lists.
             this.Lights = new List<Light>();
+            this.Entities = new List<Entity>();
 
+            // Loads lights from JSON.
+            StreamReader fileReader = File.OpenText(Path.Combine(Environment.CurrentDirectory, "files", "maps", fileName, "lights.json"));
+            JSON.Light[] lights = JsonConvert.DeserializeObject<JSON.Light[]>(fileReader.ReadToEnd());
+            fileReader.Close();
+
+            // Loads the lights.
+            for (int i = 0; i < lights.Length; ++i)
+            {
+                this.Lights.Add(Light.ConvertFromJson(lights[i]));
+            }
+
+            // Loads lights from JSON.
+            fileReader = File.OpenText(Path.Combine(Environment.CurrentDirectory, "files", "maps", fileName, "entities.json"));
+            JSON.Entity[] entities = JsonConvert.DeserializeObject<JSON.Entity[]>(fileReader.ReadToEnd());
+            fileReader.Close();
+
+            // Loads the lights.
+            for (int i = 0; i < entities.Length; ++i)
+            {
+                this.Entities.Add(Entity.ConvertFromJson(entities[i]));
+            }
+
+            // Loads spawnpoint from JSON.
+            fileReader = File.OpenText(Path.Combine(Environment.CurrentDirectory, "files", "maps", fileName, "spawn_point.json"));
+            this.SpawnPoint = JsonConvert.DeserializeObject<Vector2f>(fileReader.ReadToEnd());
+            fileReader.Dispose();
+
+            // Loads the player.
             this.Player = player;
             this.Player.AttachToMap(this);
+
+            // Creates a text object.
+            this.Name = new Text("map name: " + fileName, new Font(Path.Combine(Environment.CurrentDirectory, "files", "sansation.ttf")), 12);
+            this.Name.Color = Color.Yellow;
         }
 
         // Adds a light.
@@ -81,6 +121,9 @@ namespace Surrounded.Source.Game
             {
                 game.Lights.Add(this.Lights[i]);
             }
+
+            // Update map name position.
+            this.Name.Position = new Vector2f(game.GetView().Center.X - (game.GetView().Size.X / 2), game.GetView().Center.Y - (game.GetView().Size.Y / 2));
 
             // Update player logic.
             this.Player.Update(game);

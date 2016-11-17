@@ -8,5 +8,11 @@ namespace Surrounded.Source.Game.Entities
 {
     public class Entity
     {
+        // Converts JSON object to normal object.
+        public static Entity ConvertFromJson(JSON.Entity json)
+        {
+            // TODO: work on this later.
+            return null;
+        }
     }
 }
